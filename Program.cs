@@ -2,6 +2,7 @@ using MeuAgenteMcp.McpServices;
 using MeuAgenteMcp.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,7 +15,8 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.MapOpenApi(); // Gera o documento json
+    app.MapScalarApiReference(); // Cria a interface em /scalar/v1
 }
 
 using (var scope = app.Services.CreateScope())
@@ -33,20 +35,37 @@ app.MapGet("/mcp/tools", () => {
     };
 });
 
-app.MapPost("/mcp/executar", async (string toolName, JsonElement arguments, AgenteVendasService service) => {
+app.MapPost("/mcp/executar", async (JsonElement body, AgenteVendasService service) => {
+    // 1. Extrai os dados do JSON recebido
+    if (!body.TryGetProperty("toolName", out var toolProperty))
+    {
+        return Results.BadRequest("O campo 'toolName' é obrigatório.");
+    }
+
+    string toolName = toolProperty.GetString() ?? "";
+
+    // Imprime no seu terminal para você conferir:
+    Console.WriteLine($"---> Recebido pedido para ferramenta: {toolName}");
+
+    // 2. Executa a lógica baseada no nome
     if (toolName == "listar_clientes")
-        return await service.ListarClientes();
+    {
+        var resultado = await service.ListarClientes();
+        return Results.Ok(resultado);
+    }
 
     if (toolName == "criar_cliente")
     {
-        var nome = arguments.GetProperty("nome").GetString();
-        var email = arguments.GetProperty("email").GetString();
-        return await service.CriarCliente(nome!, email!);
+        var args = body.GetProperty("arguments");
+        var nome = args.GetProperty("nome").GetString();
+        var email = args.GetProperty("email").GetString();
+        var resultado = await service.CriarCliente(nome!, email!);
+        return Results.Ok(resultado);
     }
 
-    return "Ferramenta não encontrada";
+    return Results.NotFound($"Ferramenta '{toolName}' não encontrada.");
 });
 
-app.MapGet("/", () => "Agente MCP .NET 10 está online e operante!");
+app.MapGet("/", () => Results.Redirect("/scalar/v1"));
 
 app.Run();
