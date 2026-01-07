@@ -5,15 +5,18 @@ using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Banco de dados em memória para teste rápido
-builder.Services.AddDbContext<AppDbContext>(opt => opt.UseInMemoryDatabase("ClientesDb"));
+builder.Services.AddOpenApi();
 
-// Registra nosso serviço
+builder.Services.AddDbContext<AppDbContext>(opt => opt.UseInMemoryDatabase("ClientesDb"));
 builder.Services.AddScoped<AgenteVendasService>();
 
 var app = builder.Build();
 
-// Criando dados de teste (Seed)
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+}
+
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -22,7 +25,7 @@ using (var scope = app.Services.CreateScope())
     db.SaveChanges();
 }
 
-// Endpoint que o Claude vai acessar
+// Endpoints existentes...
 app.MapGet("/mcp/tools", () => {
     return new[] {
         new { name = "listar_clientes", description = "Busca todos os clientes no banco" },
