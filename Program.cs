@@ -31,7 +31,9 @@ using (var scope = app.Services.CreateScope())
 app.MapGet("/mcp/tools", () => {
     return new[] {
         new { name = "listar_clientes", description = "Busca todos os clientes no banco" },
-        new { name = "criar_cliente", description = "Cadastra um novo cliente" }
+        new { name = "criar_cliente", description = "Cadastra um novo cliente" },
+        new { name = "editar_cliente", description = "Atualiza nome, email ou status de um cliente" },
+        new { name = "excluir_cliente", description = "Remove um cliente pelo ID" }
     };
 });
 
@@ -43,9 +45,6 @@ app.MapPost("/mcp/executar", async (JsonElement body, AgenteVendasService servic
     }
 
     string toolName = toolProperty.GetString() ?? "";
-
-    // Imprime no seu terminal para você conferir:
-    Console.WriteLine($"---> Recebido pedido para ferramenta: {toolName}");
 
     // 2. Executa a lógica baseada no nome
     if (toolName == "listar_clientes")
@@ -61,6 +60,25 @@ app.MapPost("/mcp/executar", async (JsonElement body, AgenteVendasService servic
         var email = args.GetProperty("email").GetString();
         var resultado = await service.CriarCliente(nome!, email!);
         return Results.Ok(resultado);
+    }
+
+    if (toolName == "editar_cliente")
+    {
+        var args = body.GetProperty("arguments");
+        var id = args.GetProperty("id").GetInt32();
+
+        string? nome = args.TryGetProperty("nome", out var n) ? n.GetString() : null;
+        string? email = args.TryGetProperty("email", out var e) ? e.GetString() : null;
+        string? status = args.TryGetProperty("status", out var s) ? s.GetString() : null;
+
+        return Results.Ok(await service.EditarCliente(id, nome, email, status));
+    }
+
+    if (toolName == "excluir_cliente")
+    {
+        var args = body.GetProperty("arguments");
+        var id = args.GetProperty("id").GetInt32();
+        return Results.Ok(await service.ExcluirCliente(id));
     }
 
     return Results.NotFound($"Ferramenta '{toolName}' não encontrada.");
