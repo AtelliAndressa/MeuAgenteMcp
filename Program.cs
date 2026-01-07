@@ -1,6 +1,7 @@
-using Microsoft.EntityFrameworkCore;
-using MeuAgenteMcp.Models;
 using MeuAgenteMcp.McpServices;
+using MeuAgenteMcp.Models;
+using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,14 +23,24 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Endpoint que o Claude vai acessar
-app.MapGet("/mcp/tools", (AgenteVendasService service) => {
+app.MapGet("/mcp/tools", () => {
     return new[] {
-        new { name = "listar_clientes", description = "Busca todos os clientes no SQL Server" }
+        new { name = "listar_clientes", description = "Busca todos os clientes no banco" },
+        new { name = "criar_cliente", description = "Cadastra um novo cliente" }
     };
 });
 
-app.MapPost("/mcp/executar", async (string toolName, AgenteVendasService service) => {
-    if (toolName == "listar_clientes") return await service.ListarClientes();
+app.MapPost("/mcp/executar", async (string toolName, JsonElement arguments, AgenteVendasService service) => {
+    if (toolName == "listar_clientes")
+        return await service.ListarClientes();
+
+    if (toolName == "criar_cliente")
+    {
+        var nome = arguments.GetProperty("nome").GetString();
+        var email = arguments.GetProperty("email").GetString();
+        return await service.CriarCliente(nome!, email!);
+    }
+
     return "Ferramenta não encontrada";
 });
 

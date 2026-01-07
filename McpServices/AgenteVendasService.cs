@@ -20,4 +20,19 @@ public class AgenteVendasService
         var clientes = await _context.Clientes.ToListAsync();
         return JsonSerializer.Serialize(clientes);
     }
+
+
+    // --- NOVA FERRAMENTA AQUI ---
+    [Description("Cadastra um novo cliente no banco de dados.")]
+    public async Task<string> CriarCliente(
+        [Description("O nome completo do cliente")] string nome,
+        [Description("O e-mail válido do cliente")] string email)
+    {
+        var novoCliente = new Cliente { Nome = nome, Email = email, Status = "Ativo" };
+
+        _context.Clientes.Add(novoCliente);
+        await _context.SaveChangesAsync();
+
+        return $"Sucesso! Cliente {nome} foi cadastrado com o ID {novoCliente.Id}.";
+    }
 }
