@@ -29,6 +29,8 @@ No terminal do projeto, execute:
 dotnet run
 
 
+
+---
 ## 🎮 Como interagir com o Agente (Guia de Comandos)
 
 ## 🧪 Testes Técnicos via Scalar (Manual CRUD)
